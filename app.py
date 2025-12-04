@@ -3,11 +3,7 @@
 import streamlit as st
 import google.generativeai as genai
 from playwright.sync_api import sync_playwright
-import os
-
-# === MAGIC FIXES FOR STREAMLIT CLOUD ===
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"           # Tells Playwright to use shared browsers
-os.system("playwright install chromium --with-deps")   # Installs Chromium + system deps at runtime
+import time
 
 st.set_page_config(page_title="AI Web Scraper", page_icon="Brain", layout="wide")
 
