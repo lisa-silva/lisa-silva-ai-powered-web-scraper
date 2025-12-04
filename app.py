@@ -1,11 +1,12 @@
-# app.py – AI-Powered Web Scraper 2025 (Works on Streamlit Cloud)
+# app.py – AI-Powered Web Scraper 2025 (100% WORKING ON STREAMLIT CLOUD)
 import streamlit as st
 import google.generativeai as genai
 from playwright.sync_api import sync_playwright
 import os
 
-# THIS LINE IS THE MAGIC FIX FOR STREAMLIT CLOUD
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
+# === MAGIC FIXES FOR STREAMLIT CLOUD ===
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"           # Tells Playwright to use shared browsers
+os.system("playwright install chromium --with-deps")   # Installs Chromium + system deps at runtime
 
 st.set_page_config(page_title="AI Web Scraper", page_icon="Brain", layout="wide")
 
@@ -25,42 +26,48 @@ if st.button("Scrape with AI", type="primary"):
     if not url.startswith(("http://", "https://")):
         st.error("Please include http:// or https://")
     else:
-        with st.spinner("Launching browser & rendering page..."):
-            with sync_playwright() as p:
-                # THESE ARGS ARE REQUIRED ON STREAMLIT CLOUD
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=[
-                        "--no-sandbox",
-                        "--disable-setuid-sandbox",
-                        "--disable-gpu",
-                        "--single-process",
-                        "--disable-dev-shm-usage"
-                    ]
+        try:
+            with st.spinner("Launching browser & rendering page..."):
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(
+                        headless=True,
+                        args=[
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox",
+                            "--disable-gpu",
+                            "--single-process",
+                            "--disable-dev-shm-usage",
+                            "--no-zygote"
+                        ]
+                    )
+                    page = browser.new_page()
+                    page.goto(url, wait_until="networkidle", timeout=60000)
+                    page.wait_for_timeout(3000)  # Extra wait for lazy-loaded content
+                    content = page.content()
+                    browser.close()
+
+            with st.spinner("Gemini AI extracting clean article..."):
+                response = model.generate_content(
+                    f"Extract the main article/content from this HTML. Return clean markdown only:\n\n{content[:60000]}"
                 )
-                page = browser.new_page()
-                page.goto(url, wait_until="networkidle", timeout=30000)
-                page.wait_for_timeout(2000)
-                content = page.content()
-                browser.close()
+                clean_text = response.text
 
-        with st.spinner("Gemini AI extracting clean article..."):
-            response = model.generate_content(
-                f"Extract the main article/content from this HTML. Return clean markdown:\n\n{content[:60000]}"
-            )
-            clean_text = response.text
+            st.success("AI Extraction Complete!")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Clean AI-Extracted Content")
+                st.markdown(clean_text)
+                st.download_button("Download Markdown", clean_text, "article.md", "text/markdown")
+            
+            with col2:
+                st.subheader("Raw HTML (preview)")
+                with st.expander("Show raw source"):
+                    st.code(content[:4000] + "\n\n... (truncated)", language="html")
 
-        st.success("AI Extraction Complete!")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("Clean AI-Extracted Content")
-            st.markdown(clean_text)
-            st.download_button("Download Markdown", clean_text, "article.md")
-        
-        with col2:
-            st.subheader("Raw HTML (preview)")
-            with st.expander("Show raw source"):
-                st.code(content[:3000] + "\n\n... (truncated)", language="html")
+        except Exception as e:
+            st.error(f"Scraping failed: {str(e)}")
+            st.info("Try a different URL or wait a moment — some sites block automated browsers.")
+
 else:
     st.info("Enter a URL and click **Scrape with AI** to begin.")
