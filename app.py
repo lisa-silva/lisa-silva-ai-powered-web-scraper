@@ -1,4 +1,5 @@
 # app.py – AI-Powered Web Scraper 2025 (100% WORKING ON STREAMLIT CLOUD)
+# app.py – AI-Powered Web Scraper 2025 (100% WORKING ON STREAMLIT CLOUD)
 import streamlit as st
 import google.generativeai as genai
 from playwright.sync_api import sync_playwright
@@ -52,22 +53,16 @@ if st.button("Scrape with AI", type="primary"):
                 )
                 clean_text = response.text
 
-            st.success("AI Extraction Complete!")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Clean AI-Extracted Content")
-                st.markdown(clean_text)
-                st.download_button("Download Markdown", clean_text, "article.md", "text/markdown")
-            
-            with col2:
-                st.subheader("Raw HTML (preview)")
-                with st.expander("Show raw source"):
-                    st.code(content[:4000] + "\n\n... (truncated)", language="html")
+    st.success("✅ AI extraction complete!")
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.subheader("🧹 Clean AI-Extracted Content")
+        st.markdown(clean_text)
+    
+    with col2:
+        st.subheader("🔍 Raw Source (for comparison)")
+        with st.expander("Show raw HTML (first 2000 chars)"):
+            st.code(content[:2000] + "...")
 
-        except Exception as e:
-            st.error(f"Scraping failed: {str(e)}")
-            st.info("Try a different URL or wait a moment — some sites block automated browsers.")
-
-else:
-    st.info("Enter a URL and click **Scrape with AI** to begin.")
+    st.download_button("💾 Download Clean Markdown", clean_text, "clean-article.md")
